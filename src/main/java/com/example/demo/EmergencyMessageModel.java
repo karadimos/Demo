@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.LocalDateTime;
@@ -18,13 +19,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import javax.xml.bind.annotation.XmlRootElement;
+import javax.annotation.Generated;
+//import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  *
  * @author Karadimos
  */
-/*
+
 @Generated("org.jsonschema2pojo")
 @JsonPropertyOrder({
     "PrimaryKeyValue",
@@ -43,8 +45,8 @@ import javax.xml.bind.annotation.XmlRootElement;
     "EmergencyMessageFaces",
     "ExtensionData"
 })
-*/
-@XmlRootElement
+
+//@XmlRootElement
 public class EmergencyMessageModel {
     
     @JsonProperty("SpotLength")
