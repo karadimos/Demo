@@ -20,7 +20,7 @@ import org.springframework.web.client.RestTemplate;
  * @author Karadimos
  */
 @Service
-public class RestConsumer {
+public class RestService {
     
     private RestTemplate restTemplate= null;
        

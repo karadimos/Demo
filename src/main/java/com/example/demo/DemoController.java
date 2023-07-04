@@ -6,6 +6,7 @@
 package com.example.demo;
 
 import java.util.Arrays;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -29,6 +30,13 @@ public class DemoController {
     public String getGreeting(){
         return demoService.hello();
     }
+    
+    @GetMapping("/bundle")
+    public UUID createBundle(){
+        return demoService.createBundleAPI("Technischer_Test_1074_30", "4BF53413-EC83-4A6C-8B77-FA1F2A1709FE", "e1e4c872-9cc0-4ade-be9c-b9b92e72dd4e");
+    }
+    
+    
     
     @GetMapping("/getEM")
     public EmergencyMessageModel getEM(){

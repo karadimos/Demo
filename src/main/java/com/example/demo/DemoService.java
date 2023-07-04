@@ -17,9 +17,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.io.File;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -30,6 +31,9 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.RestTemplate;
 
 
 /**
@@ -39,6 +43,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Service
 public class DemoService {
     
+    private RestTemplate restTemplate= null;
+    
     private String AYUDACLOUD_URL = "https://stroeerdemo.ayudapreview.com/Juice/Pi/";   
     private String AYUDACLOUD_URL2 = "https://stroeerdemo.ayudapreview.com/Juice/";   
     String ayudaPVFacenumberId="5f753407-782b-4a3d-aaa0-6ce20119638c";
@@ -47,8 +53,8 @@ public class DemoService {
     private MultiValueMap<String, String> multiParams = new LinkedMultiValueMap<>();
     //private MultivaluedMap<String, String> multiParams = new MultivaluedHashMap<>();
     
-    @Autowired
-    private RestConsumer restConsumer;
+    //@Autowired
+    //private RestService restService;
     
     
     public String hello(){
@@ -80,7 +86,7 @@ public class DemoService {
                 multiParams.add("filters", JsonHelper.getJsonFromRequestModel(filterCollection));
                 multiParams.add("iDisplayLength", String.valueOf(2)); 
                 HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(multiParams, headers);
-                ResponseEntity<String> response = restConsumer.getRestTemplate().exchange(AYUDACLOUD_URL.replace("/Pi","/")  + "Faces/JsonGetSummaryEntities", HttpMethod.POST,                         request, String.class);
+                ResponseEntity<String> response = getRestTemplate2().exchange(AYUDACLOUD_URL.replace("/Pi","/")  + "Faces/JsonGetSummaryEntities", HttpMethod.POST,                         request, String.class);
                 ObjectMapper objectMapper = new ObjectMapper();
                 Object json = objectMapper.readValue(response.getBody(), Object.class);
                 LinkedHashMap h = (LinkedHashMap) json;
@@ -130,78 +136,48 @@ public class DemoService {
             
     }
     */
-
+    
     public boolean login(){
-        final String url = AYUDACLOUD_URL  + "Session/Login";
+        boolean b=false;
+        int i =0;
+        while(i<3 && b == false){
+            b =login2();
+            i++;
+        }
+        return b;
+    }
 
-        //RestTemplate template = new getRestTemplate();
+    public boolean login2(){
+        try{
+            final String url = AYUDACLOUD_URL  + "Session/Login";
+            HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+                headers.add("Connection", "keep-alive");
+                multiParams.clear();
+                multiParams.add("userName", "APIUser2");
+                multiParams.add("password", "cS#H@2R#3");
+
+                HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(multiParams, headers);       
+                ResponseEntity<String> response = getRestTemplate2().exchange(url, HttpMethod.POST, request, String.class);
+                HttpHeaders respHeaders = response.getHeaders();
+                String set_cookie = respHeaders.getFirst(HttpHeaders.SET_COOKIE);         
+                System.out.println("cookie:" + set_cookie);           
+            return set_cookie != null;
+        }catch(Exception ex){
+            System.out.println("login error: " + ex.getMessage());
+            return false;
+        }
             
-        Credentials cred = new Credentials();
-        cred.setUserName("APIUser2");
-        cred.setPassword("cS#H@2R#3");
-
-        HttpEntity<Credentials> request = new HttpEntity<>(cred);       
-        ResponseEntity<String> response = restConsumer.getRestTemplate().exchange(url, HttpMethod.POST, request, String.class);
-        HttpHeaders headers = response.getHeaders();
-        String set_cookie = headers.getFirst(HttpHeaders.SET_COOKIE);
-                //.concat("\n")      
-                //.concat(getOptions(""))
-               // .concat(getOptions( "EmergencyMessage"))
-            //.concat(getOptions( "EmergencyMessage/Get"))
-            //.concat(getOptions( "EmergencyMessage/Create"))
-            //.concat(getOptions( "Bundle/Create"))
-            //.concat( getOptions( "Design/Create"));
-        System.out.println("cookie:" + set_cookie);
-        return set_cookie != null;
     }
     
     public void logout() {
         try {
-            String response = restConsumer.getRestTemplate().getForObject(AYUDACLOUD_URL  + "Session/Logout", String.class);
-            
+            String response = getRestTemplate2().getForObject(AYUDACLOUD_URL  + "Session/Logout", String.class);
+            System.out.println("logout: " + response);
         } catch (Exception ex) {
         }
     }
-    /*
-    public String setPvFaceNr(String ayudaFaceGuid, String aliasName){
-        //88A7249B-C8B3-4807-8109-ED0A0C9B2947
-        //GTd1928
-        MultiValueMap<String, String> params= new LinkedMultiValueMap<>();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        //headers.setContentType(MediaType.APPLICATION_JSON);
-            //headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-        SimpleDateFormat AYUDADATEFORMATTERNOHOURS = new SimpleDateFormat("yyyy-MM-dd");
-        if (login()) {
-            //generate a map that is then sent to set the PVFacenumber
-            //Map<String, Object> val = new HashMap<>();
-            
-            params.add("PropertyID", ayudaPVFacenumberId);
-            params.add("EntityPropertyID", UUID.randomUUID().toString());
-            params.add("LinkedToID", ayudaFaceGuid);
-            params.add("EntityPropertyType", "Face");
-            params.add("Value", aliasName);
-            params.add("StartDate", AYUDADATEFORMATTERNOHOURS.format(new Date()) + "T00:00:00");            
-            params.add("EndDate", "");
-            params.add("IsLive", "True");
-            params.add("TimeStamp", "AAAAAAAAAAA=");
-            params.add("IsEditable", "True");
-            params.add("IsNew", "True");
-            params.add("IsExisting", "False");
-            params.add("IsModify", "False");
-            params.add("AllowRedirectOnCreation", "False");
-      
-            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
-            System.out.println(AYUDACLOUD_URL2   + pvfacechangerequestaddress);
-            //ResponseEntity<String> response = getRestTemplate().postForEntity(AYUDACLOUD_URL2   + pvfacechangerequestaddress, request, String.class);
-            ResponseEntity<String> response = getRestTemplate().exchange(AYUDACLOUD_URL2   + pvfacechangerequestaddress, HttpMethod.POST, request, String.class);
-            System.out.println(response.getBody());
-            logout();
-            return response.getBody();
-        }else return "Ayuda login fehler";                                        
-    }
-    */
-    
+        
     public String setPvFaceNr(String ayudaFaceGuid, String aliasName){
         MultiValueMap<String, String> params= new LinkedMultiValueMap<>();
         SimpleDateFormat AYUDADATEFORMATTERNOHOURS = new SimpleDateFormat("yyyy-MM-dd");
@@ -224,15 +200,12 @@ public class DemoService {
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
             try{
                 System.out.println((AYUDACLOUD_URL2)  + pvfacechangerequestaddress);
-                ResponseEntity<String> response = restConsumer.getRestTemplate().exchange(AYUDACLOUD_URL2  + pvfacechangerequestaddress, HttpMethod.POST, request, String.class);
+                ResponseEntity<String> response = getRestTemplate2().exchange(AYUDACLOUD_URL2  + pvfacechangerequestaddress, HttpMethod.POST, request, String.class);
                 System.out.println(response.getBody());
                 if((response.getBody()).contains("\"Success\":false")){
-                    //sendMail(mailFrom, Arrays.asList("athanasios.karadimos@stroeer.de"),  "Aupal: error in function setPvFaceNr(" + aliasName + ")",  null2Str(response.getBody()));
                     return null;
                 }else return (response.getBody());
             }catch(RestClientException e){
-                //sendMail(mailFrom, mailTo, mailFrom, mailFrom);
-                //sendMail(mailFrom, Arrays.asList("athanasios.karadimos@stroeer.de"),  "Aupal: error in function setPvFaceNr(" + aliasName + ")",  "");                                           
                 return null;
             }finally{
                 logout(); 
@@ -243,23 +216,44 @@ public class DemoService {
         }                                               
     }
     
-    public EmergencyMessageModel getEmergency(){
-        return getEmergency("a5eb7c96-886c-4fa7-a35b-334eb8832507");
-        /*
-        Map<String, String> params = new HashMap<>();
-        params.put("id", "a5eb7c96-886c-4fa7-a35b-334eb8832507");   
-        //params.put("id", "eb577824-49ee-4150-ba06-a660e788ca61"); 
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(AYUDACLOUD_URL  + "EmergencyMessage/Get"); //EmergencyMessage/Get");
-        for (Map.Entry<String, String> entry : params.entrySet()) {
-            builder.queryParam(entry.getKey(), entry.getValue());
+    public UUID createBundleAPI(String designName, String advertiserID, String contentTypeId) {
+        try{
+            final HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+            //String bundleUuid = UUID.randomUUID().toString();
+            if(!designName.isEmpty()) designName = designName.replaceAll(" ", "_");
+            BundleModel bundleModel = new BundleModel();
+            bundleModel.setAdvertiserID(advertiserID);
+            //bundleModel.setAdvertiserCategoryID(null);
+            //bundleModel.setBundleID(bundleUuid);
+            bundleModel.setContentTypeID(contentTypeId);        
+            bundleModel.setDescription(designName);
+            bundleModel.setFilterDesignsByAspectRatio(true);
+            bundleModel.setHeightInPixels(0);
+            bundleModel.setName(designName);
+            //CHECK bundleModel.setPlayToEnd(loggedIn);
+            bundleModel.setStretch(1);
+            bundleModel.setWidthInPixels(0);
+            bundleModel.setTriggeredByBundleID(null);
+            HttpEntity<BundleModel> request = new HttpEntity<>(bundleModel,httpHeaders); 
+            ResponseEntity<String> bundleID = getRestTemplate2().exchange(AYUDACLOUD_URL  + "Bundle/Create", HttpMethod.POST, request, String.class);
+            if (bundleID.getBody()!=null) {
+                return UUID.fromString(bundleID.getBody());
+            } else {
+                return null; 
+            }
+        }catch(RestClientException ex){
+            System.out.println(AYUDACLOUD_URL  + "createBundleAPI: " +  ex.getMessage());
+            return null;
         }
-        HttpEntity<EmergencyMessageModel> response = getRestTemplate().exchange(builder.toUriString(), HttpMethod.GET, null, EmergencyMessageModel.class);
-        return response.getBody();
-        */
+    }
+    
+    public EmergencyMessageModel getEmergency(){
+        return getEmergency("a5eb7c96-886c-4fa7-a35b-334eb8832507");        
     }
     
     public String getOptions(String url){
-        Set<HttpMethod> optionsForAllow = restConsumer.getRestTemplate().optionsForAllow(AYUDACLOUD_URL + url);
+        Set<HttpMethod> optionsForAllow = getRestTemplate2().optionsForAllow(AYUDACLOUD_URL + url);
         //HttpMethod[] supportedMethods = {HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE};
         
         String retStr = url + ":\n";
@@ -270,21 +264,7 @@ public class DemoService {
         return retStr;
     }
     
-    public EmergencyMessageModel createEmergency(){
-        /*
-            "Code": "Mowas_1055_26",
-            "Name": "Technischer Test_rs576_recklinghausen_1055_26",
-            "BundleID": "d0b7cb3e-3cf0-49ab-99bc-124b0b066ef2",
-            "SpotLength": 20,
-            "IsAppendingLoop": false,
-            "IsOverridingLoop": false,
-            "AppendLoopStartDateTimeUTC": "2023-04-02T10:00:00",
-            "OverrideLoopStartDateTimeUTC": "2023-04-02T10:00:00",
-            "AppendLoopEndDateTimeUTC": "2023-04-02T11:00:00",
-            "OverrideLoopEndDateTimeUTC": "2023-04-02T13:00:00",
-            "Saturation": 0,
-            "EmergencyMessageFaces": null
-        */
+    public EmergencyMessageModel createEmergency(){        
         LocalDateTime dat = LocalDateTime.now();
         
         EmergencyMessageModel em = new EmergencyMessageModel();
@@ -303,7 +283,7 @@ public class DemoService {
         em.setSaturation(1);
         em.setSpotLength(30);
         HttpEntity<EmergencyMessageModel> request = new HttpEntity<>(em);
-        HttpEntity<String> response = restConsumer.getRestTemplate().exchange(AYUDACLOUD_URL  + "EmergencyMessage/Create", HttpMethod.POST, request, String.class);
+        HttpEntity<String> response = getRestTemplate2().exchange(AYUDACLOUD_URL  + "EmergencyMessage/Create", HttpMethod.POST, request, String.class);
         System.out.println(response.getBody());
         ObjectMapper mapper = new ObjectMapper();
         try {
@@ -330,23 +310,8 @@ public class DemoService {
         params.add("OverrideLoopEndDateTimeUTC", em.getOverrideLoopEndDateTimeUTC().toString());
         params.add("Saturation", String.valueOf(em.getSaturation()));
         params.add("EmergencyMessageFaces", null); //em.getEmergencyMessageFaces());
-        
-        /*
-        params.add("Code", "Mowas_1055_26");
-        params.add("Name", "Technischer Test_rs576_recklinghausen_1055_26");
-        params.add("BundleID", "d0b7cb3e-3cf0-49ab-99bc-124b0b066ef2");
-        params.add("SpotLength", "20");
-        params.add("IsAppendingLoop", "false");
-        params.add("IsOverridingLoop", "false");
-        params.add("AppendLoopStartDateTimeUTC", "2023-04-02T10:00:00");
-        params.add("OverrideLoopStartDateTimeUTC", "2023-04-02T10:00:00");
-        params.add("AppendLoopEndDateTimeUTC", "2023-04-02T11:00:00");
-        params.add("OverrideLoopEndDateTimeUTC", "2023-04-02T13:00:00");
-        params.add("Saturation", "0");
-        params.add("EmergencyMessageFaces", null);
-        */
         HttpEntity<MultiValueMap<String, String>> request2 = new HttpEntity<>(params, headers);
-        ResponseEntity<String> response2 = restConsumer.getRestTemplate().exchange(AYUDACLOUD_URL  + "EmergencyMessage/Create", HttpMethod.POST, request2, String.class);
+        ResponseEntity<String> response2 = getRestTemplate2().exchange(AYUDACLOUD_URL  + "EmergencyMessage/Create", HttpMethod.POST, request2, String.class);
         System.out.println(response2.getBody());
         return getEmergency(response2.getBody());
     }
@@ -359,8 +324,88 @@ public class DemoService {
         for (Map.Entry<String, String> entry : params.entrySet()) {
             builder.queryParam(entry.getKey(), entry.getValue());
         }
-        ResponseEntity<EmergencyMessageModel> response = restConsumer.getRestTemplate().exchange(builder.toUriString(), HttpMethod.GET, null, EmergencyMessageModel.class);
+        ResponseEntity<EmergencyMessageModel> response = getRestTemplate2().exchange(builder.toUriString(), HttpMethod.GET, null, EmergencyMessageModel.class);
         return response.getBody();
     }
     
+    public String uploadFileAPI(String fileName, UUID fileId)  {
+        try {
+            uploadFileUsingApi(fileId, fileName);            
+            moveFileToStorage(fileId, fileName);
+            return fileId.toString();
+        } catch (Exception ex) {
+            System.out.println("error: "  + ex.getMessage());            
+            return null;
+        }     
+    }
+    
+    public String uploadFileUsingApi(UUID fileId, String fileName) {
+        String responseStr="";
+        try{             
+            final HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.setContentType(MediaType.MULTIPART_FORM_DATA);
+            final File uploadFile = new File("d://".concat(fileName));
+            final FileSystemResource fileSystemResource = new FileSystemResource(uploadFile);
+            final MultiValueMap<String, Object> fileUploadMap = new LinkedMultiValueMap<>();
+            fileUploadMap.set("data", fileSystemResource);
+            fileUploadMap.set("id", fileId.toString());
+            HttpEntity<MultiValueMap<String, Object>> httpEntity = new HttpEntity<>(fileUploadMap, httpHeaders);
+            ResponseEntity<String> responseEntity = getRestTemplate2().exchange(AYUDACLOUD_URL + "File/Upload", HttpMethod.POST, httpEntity, String.class);
+            if(responseEntity.getStatusCode().equals(HttpStatus.OK)){
+                responseStr = responseEntity.getBody();
+                if( responseStr.contains("\"Success\":false") || responseStr.equals("false")){
+                    System.out.println(AYUDACLOUD_URL  + "File/Upload: " +  responseStr);
+                }
+                System.out.println(responseStr);
+            } else {
+                System.out.println(AYUDACLOUD_URL  + "File/Upload: " + responseEntity.getStatusCode()+ " - " + responseEntity.getBody());
+            }     
+            return responseStr;
+        }catch(Exception ex){
+            System.out.println(AYUDACLOUD_URL  + "uploadFileUsingApi: " + ex.getMessage());
+            return responseStr;
+        }
+    }
+    
+    private void moveFileToStorage(UUID fileId, String fileName){
+        moveFileToStorageUsingApi(fileId, fileName);
+    }
+    
+    public void moveFileToStorageUsingApi(UUID fileId, String fileName) {
+        final HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        //httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+        //httpHeaders.add("X-Requested-With", "XMLHttpRequest");
+        multiParams.clear();
+        multiParams.add("id", fileId.toString());
+        multiParams.add("blockCount", "1");
+        multiParams.add("name", fileName);
+        multiParams.add("fileExtension", "78005D67-8340-4555-960B-084279F91A73"); //HardcodedAyudaFileExtensions.forFileName(fileName).toString());
+        try{            
+            HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(multiParams, httpHeaders);
+            ResponseEntity<String> response = getRestTemplate2().exchange(AYUDACLOUD_URL  + "File/Store", HttpMethod.POST, httpEntity, String.class);    
+            String responseStr = response.getBody();
+            if (response.getStatusCode().equals(HttpStatus.OK)) {            
+                if( responseStr.contains("\"Success\":false") || responseStr.equals("false")){
+                    System.out.println("moveFileToStorageUsingApi: " +  responseStr);
+                }
+                System.out.println(responseStr);
+            } else {
+                System.out.println("moveFileToStorageUsingApi: " +  responseStr);
+            } 
+        }catch(RestClientException ex){
+            System.out.println("moveFileToStorageUsingApi: " +  ex.getMessage());
+        }
+    }
+    
+    //@Bean
+    public RestTemplate getRestTemplate2() {
+        if(this.restTemplate==null){        
+            this.restTemplate = new RestTemplateBuilder()
+                .basicAuthentication("APIUser2", "cS#H@2R#3")   
+                .interceptors(new StatefulRestTemplateInterceptor())    
+                .build();
+        }
+        return this.restTemplate;
+    }
 }
