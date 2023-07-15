@@ -50,6 +50,7 @@ public class DemoService {
     String ayudaPVFacenumberId="5f753407-782b-4a3d-aaa0-6ce20119638c";
     String pvfacechangerequestaddress="AssetProperties/JsonAdd";
     
+    Map<String, String> params = new HashMap<>();
     private MultiValueMap<String, String> multiParams = new LinkedMultiValueMap<>();
     //private MultivaluedMap<String, String> multiParams = new MultivaluedHashMap<>();
     
@@ -407,5 +408,21 @@ public class DemoService {
                 .build();
         }
         return this.restTemplate;
+    }
+    
+    public String updateEmergencyBundleAPI(UUID EmergencyID, UUID bundleID){          
+        params.clear();
+        try{
+            params.put("id",EmergencyID.toString());
+            params.put("BundleID",bundleID.toString());
+            //params.put("DesignID",designID.toString());
+            HttpEntity<Map<String,String>> request = new HttpEntity<>(params);
+            ResponseEntity<String> ret = getRestTemplate2().exchange(AYUDACLOUD_URL  + "EmergencyMessage/UpdateBundle", HttpMethod.POST, request, String.class);
+            return ret.getBody();
+        }catch(RestClientException ex){
+            //throw new GenericException(MowasErrorCodes.AYUDA_UPLOAD_FEHLER, AYUDACLOUD_URL  + "addDesignToBundleAPI: " +  ex.getMessage());
+            System.out.println("error: " + ex.getMessage());
+            return null;
+        }      
     }
 }

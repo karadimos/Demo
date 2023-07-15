@@ -36,6 +36,13 @@ public class DemoController {
         return demoService.createBundleAPI("Technischer_Test_1074_30", "4BF53413-EC83-4A6C-8B77-FA1F2A1709FE", "e1e4c872-9cc0-4ade-be9c-b9b92e72dd4e");
     }
     
+    @GetMapping("/em2bundle")
+    public String em2bundle(){
+        return demoService.updateEmergencyBundleAPI(UUID.fromString("3297dd3b-92c0-4ba6-9a48-8000a497658d"), UUID.fromString("b257cd3e-7c24-4206-b421-a0cf7e078953"));
+    }
+    
+    
+    
     
     
     @GetMapping("/getEM")
